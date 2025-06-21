@@ -20,3 +20,5 @@ app.use("/auth", authRoutes);
 // app.listen(port, ()=>{
 //     console.log("Server running on port 3000.");
 // });
+
+export default app;
