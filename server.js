@@ -1,9 +1,9 @@
 import express from "express";
-import db from "./db.js";
 import aj from "./aj.js";
 import { clerkMiddleware } from "@clerk/express"; 
 import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
+// import dashRoutes from "./routes/dashRoutes.js";
 
 const app = express();
 const port = 3000;
@@ -16,9 +16,10 @@ app.use(cors({
 app.use(clerkMiddleware());
 
 app.use("/auth", authRoutes);
+// app.use("/dash", dashRoutes);
 
-// app.listen(port, ()=>{
-//     console.log("Server running on port 3000.");
-// });
+app.listen(port, ()=>{
+    console.log("Server running on port 3000.");
+});
 
 export default app;
