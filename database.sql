@@ -7,3 +7,14 @@ CREATE TABLE users (
   createdAt TIMESTAMP,
   updatedAt TIMESTAMP
 );
+
+CREATE TABLE accounts(
+	id SERIAL PRIMARY KEY,
+	name VARCHAR(255),
+	type VARCHAR(50),
+	balance NUMERIC(15, 2),
+	isDefault BOOLEAN,
+	userId INT,
+	createdAt TIMESTAMP,
+	updatedAt TIMESTAMP
+);

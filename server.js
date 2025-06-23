@@ -3,10 +3,16 @@ import aj from "./aj.js";
 import { clerkMiddleware } from "@clerk/express"; 
 import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
-// import dashRoutes from "./routes/dashRoutes.js";
+import dashRoutes from "./routes/dashRoutes.js";
+import bodyParser from "body-parser";
 
 const app = express();
+app.use(express.json());
+
 const port = 3000;
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 app.use(cors({
   origin: "http://localhost:5173",
@@ -16,7 +22,7 @@ app.use(cors({
 app.use(clerkMiddleware());
 
 app.use("/auth", authRoutes);
-// app.use("/dash", dashRoutes);
+app.use("/dash", dashRoutes);
 
 // app.listen(port, ()=>{
 //     console.log("Server running on port 3000.");

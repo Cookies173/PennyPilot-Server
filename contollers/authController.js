@@ -5,7 +5,7 @@ import { clerkClient } from "@clerk/express";
 
 export const syncUser = async (req, res) => {
     try{
-        const { userId } = req.auth;
+        const { userId } = req.auth();
         if(!userId){
             return res.status(401).json({ error: "Unauthorized" });
         }
@@ -23,7 +23,7 @@ export const syncUser = async (req, res) => {
             SET name=EXCLUDED.name, email=EXCLUDED.email, imageUrl=EXCLUDED.imageUrl, updatedAt=NOW()
             RETURNING *`, [userId, name, email, imageUrl]
         );
-        res.json({ success: true, user: result.rows[0] });
+        res.json({ success: true, Id: result.rows[0] });
     }
     catch(err){
         console.error(err);
