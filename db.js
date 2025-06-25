@@ -12,12 +12,12 @@ const db = new pg.Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-db.on("connect", () => {
-  console.log("Connected to the database");
-});
+// db.on("connect", () => {
+//   console.log("Connected to the database");
+// });
 
-db.on("error", (err) => {
-  console.error("Database error:", err.message);
-});
+// db.on("error", (err) => {
+//   console.error("Database error:", err.message);
+// });
 
 export default db;
