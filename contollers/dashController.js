@@ -1,5 +1,5 @@
 import express from "express";
-import db from "../db.js";
+import db from "../lib/db.js";
 
 export const newAccount = async (req, res) => {
     try{
@@ -98,7 +98,7 @@ export const updateDefault = async(req, res) => {
         );
 
         const { accountId } = req.body;
-        console.log(accountId);
+        // console.log(accountId);
 
         const updateDefault = await db.query(`
             UPDATE accounts

@@ -18,3 +18,22 @@ CREATE TABLE accounts(
 	createdAt TIMESTAMP,
 	updatedAt TIMESTAMP
 );
+
+CREATE TABLE transactions(
+  id SERIAL PRIMARY KEY,
+  type VARCHAR(50),
+  userId INT,
+  amount NUMERIC(15, 2),
+  account_id INT,
+  description VARCHAR(255),
+  date TIMESTAMP,
+  category VARCHAR(50),
+  receiptUrl TEXT,
+  isRecurring BOOLEAN,
+  recurringInterval TEXT,
+  nextRecurringDate TIMESTAMP,
+  lastProcessed TIMESTAMP,
+  status VARCHAR(255),
+  createdAt TIMESTAMP,
+  updatedAt TIMESTAMP
+);

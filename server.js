@@ -1,11 +1,11 @@
 import express from "express";
-import aj from "./aj.js";
+import aj from "./lib/aj.js";
 import { clerkMiddleware } from "@clerk/express"; 
 import authRoutes from "./routes/authRoutes.js";
 import cors from "cors";
 import dashRoutes from "./routes/dashRoutes.js";
 import bodyParser from "body-parser";
-import acctRoutes from "./routes/acctRoutes.js";
+import acntRoutes from "./routes/acntRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -24,7 +24,7 @@ app.use(clerkMiddleware());
 
 app.use("/auth", authRoutes);
 app.use("/dash", dashRoutes);
-// app.use("/acct", acctRoutes);
+app.use("/acnt", acntRoutes);
 
 // app.listen(port, ()=>{
 //     console.log("Server running on port 3000.");
