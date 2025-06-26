@@ -24,7 +24,7 @@ app.use(clerkMiddleware());
 
 app.use("/auth", authRoutes);
 app.use("/dash", dashRoutes);
-app.use("/acct", acctRoutes);
+// app.use("/acct", acctRoutes);
 
 // app.listen(port, ()=>{
 //     console.log("Server running on port 3000.");
