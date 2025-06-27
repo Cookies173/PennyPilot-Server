@@ -22,7 +22,14 @@ export const accountDetails = async(req, res) => {
             WHERE userId=$1 AND id=$2`, [id, accountId]
         );
 
-        return res.json({ success: true, accounts: accounts.rows });
+        const transactions = await db.query(`
+            SELECT *
+            FROM transactions
+            WHERE userId=$1 AND accountId=$2
+            ORDER BY date DESC`, [id, accountId]
+        );
+
+        return res.json({ success: true, accounts: accounts.rows, transactions: transactions.rows });
     }
     catch(err){
         console.error(err);

@@ -24,7 +24,7 @@ CREATE TABLE transactions(
   type VARCHAR(50),
   userId INT,
   amount NUMERIC(15, 2),
-  account_id INT,
+  accountId INT,
   description VARCHAR(255),
   date TIMESTAMP,
   category VARCHAR(50),
@@ -37,3 +37,38 @@ CREATE TABLE transactions(
   createdAt TIMESTAMP,
   updatedAt TIMESTAMP
 );
+
+INSERT INTO transactions(
+  type,
+  userId,
+  amount,
+  accountId,
+  description,
+  date,
+  category,
+  receiptUrl,
+  isRecurring,
+  recurringInterval,
+  nextRecurringDate,
+  lastProcessed,
+  status,
+  createdAt,
+  updatedAt
+)
+SELECT 
+  CASE WHEN random() < 0.4 THEN 'income' ELSE 'expense' END,
+  1, -- userId
+  ROUND((random() * 10000 + 100)::NUMERIC, 2), -- amount between 100 and 10100
+  17, -- account_id
+  (ARRAY['Grocery shopping', 'Online subscription', 'Salary', 'Freelance work', 'Dining out', 'Utility bill'])[floor(random()*6)::int],
+  NOW() - (interval '1 day' * floor(random() * 180)),
+  (ARRAY['food', 'utilities', 'entertainment', 'salary', 'freelance', 'health'])[floor(random()*6)::int],
+  CASE WHEN random() < 0.7 THEN 'https://example.com/receipt/' || md5(random()::text) ELSE NULL END,
+  (random() < 0.3),
+  CASE WHEN random() < 0.3 THEN (ARRAY['daily', 'weekly', 'monthly'])[floor(random()*3)::int] ELSE NULL END,
+  NOW() + (interval '1 day' * floor(random() * 90)),
+  NOW() - (interval '1 day' * floor(random() * 180)),
+  (ARRAY['pending', 'completed', 'failed'])[floor(random()*3)::int],
+  NOW() - (interval '1 day' * floor(random() * 180)),
+  NOW()
+FROM generate_series(1, 100);
