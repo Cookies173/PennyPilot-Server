@@ -6,6 +6,7 @@ import cors from "cors";
 import dashRoutes from "./routes/dashRoutes.js";
 import bodyParser from "body-parser";
 import acntRoutes from "./routes/acntRoutes.js";
+import tranRoutes from "./routes/tranRoutes.js";
 
 const app = express();
 app.use(express.json());
@@ -25,6 +26,7 @@ app.use(clerkMiddleware());
 app.use("/auth", authRoutes);
 app.use("/dash", dashRoutes);
 app.use("/acnt", acntRoutes);
+app.use("/tran", tranRoutes);
 
 // app.listen(port, ()=>{
 //     console.log("Server running on port 3000.");

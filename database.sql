@@ -72,3 +72,12 @@ SELECT
   NOW() - (interval '1 day' * floor(random() * 180)),
   NOW()
 FROM generate_series(1, 100);
+
+CREATE TABLE budgets(
+  id SERIAL PRIMARY KEY,
+  amount NUMERIC(15, 2),
+  userId INT,
+  lastAlertSent TIMESTAMP,
+  createdAt TIMESTAMP,
+  updatedAt TIMESTAMP
+);
