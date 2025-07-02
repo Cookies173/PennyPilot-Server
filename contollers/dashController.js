@@ -16,6 +16,7 @@ export const newAccount = async (req, res) => {
 
 
         let { name, type, balance, isDefault } = req.body;
+        
         if(!name || !type){
             return res.status(400).json({ error: "Missing required fields." });
         }
