@@ -1,5 +1,12 @@
 import express from "express";
 import db from "../lib/db.js";
+import aj from "../lib/aj.js";
+import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+dotenv.config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const allAccount = async (req, res) => {
     try{
@@ -57,7 +64,26 @@ export const createTransaction = async (req, res) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Arkjet for rate limiting
+        const decision = await aj.protect(req, {
+            userId,
+            requested : 1, // Specify how many token to be used...
+        });
+
+        if(decision.isDenied()){
+            if(decision.reason.isRateLimit()){
+                const { remaining, reset } = decision.reason;
+                console.error({
+                    code: "RATE_LIMIT_EXCEEDED",
+                    details : {
+                        remaining,
+                        resetInSeconds : reset,
+                    },
+                });
+
+                return res.status(429).json({ error: "Too many requests... Please try again later" });
+            }
+            return res.status(403).json({ error: "Request Blocked" });
+        }
 
         const user = await db.query(`
             SELECT id 
@@ -104,4 +130,71 @@ export const createTransaction = async (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Database error" });
     }
-}
+};
+
+export const scanReceipt = async (req, res) => {
+    try{
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const file = req.file;
+
+        if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+        const arrayBuffer = file.buffer;
+
+        const base64String = Buffer.from(arrayBuffer).toString("base64");
+
+        const prompt=`
+            Analyze this receipt image and extract the following information in JSON format:
+            - Total amount (just the number)
+            - Date (in ISO format)
+            - Description or items purchased (brief summary)
+            - Merchant/store name
+            - Suggested category (one of: Housing,Transportation,Groceries,Utilities,Entertainment,Food,Shopping,Healthcare,Education,Personal,Travel,Insurance,Gifts,Bills,Other-Expense )
+            
+            Only respond with valid JSON in this exact format:
+            {
+                "amount": number,
+                "date": "ISO date string",
+                "description": "string",
+                "merchantName": "string",
+                "category": "string"
+            }
+
+            If its not a recipt, return an empty object
+        `;
+
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    data: base64String,
+                    mimeType: file.mimetype,
+                }
+            },
+            prompt,
+        ]);
+
+        const response = await result.response;
+        const text = response.text();
+        const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+
+        try{
+            const data = JSON.parse(cleanedText);
+            if(!data.amount || !data.date) return res.status(400).json({ error: "Invalid response format from Gemini" });
+            return res.status(200).json({
+                amount: parseFloat(data.amount),
+                date: new Date(data.date),
+                description: data.description,
+                category: data.category,
+                merchantName: data.merchantName,
+            });
+        }
+        catch(parseError){
+            console.error("Error parsing JSON response:", parseError);
+        }
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({ error: "Failed to scan receipt" });
+    }
+};
