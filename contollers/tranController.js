@@ -288,7 +288,7 @@ export const updateTransaction = async(req, res) => {
         // update balance to account
 
         
-        return res.json({ success: true, transaction: transaction.rows[0] });
+        return res.json({ success: true, transaction: transaction.rows });
     }
     catch(err){
         console.error(err);
