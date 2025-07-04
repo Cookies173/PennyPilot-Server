@@ -67,7 +67,6 @@ export const transactionBulkDelete = async(req, res) => {
 
         console.log(deleteTransactions.rows);
 
-        // console.log(transactionIds);
         return res.json({ success: true, transactions : transactions });
     }
     catch(err){
