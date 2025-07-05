@@ -1,5 +1,5 @@
 import express from "express";
-import { allAccount, getBudget, newAccount, updateBudget, updateDefault } from "../contollers/dashController.js";
+import { allAccount, getBudget, getDashboardData, newAccount, updateBudget, updateDefault } from "../controllers/dashController.js";
 
 const router = express.Router();
 
@@ -8,5 +8,6 @@ router.get("/acc", allAccount);
 router.post("/def", updateDefault);
 router.get("/bud", getBudget);
 router.post("/upb", updateBudget);
+router.get("/dat", getDashboardData);
 
 export default router;

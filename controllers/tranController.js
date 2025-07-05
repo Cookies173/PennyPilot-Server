@@ -115,14 +115,19 @@ export const createTransaction = async (req, res) => {
         const balanceChange = (type == "expense") ? -amountFloat : amountFloat;
         const newBalance = parseFloat(account.rows[0].balance) + balanceChange;
 
-        const transaction = await db.query(`
-            INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, recurringInterval, createdAt, updatedAt)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-            RETURNING *`, [type, id, amountFloat, accountIdFloat, description, date, category, isRecurring, recurringInterval]
+        const updateAccount = await db.query(`
+            UPDATE accounts
+            SET balance=$1
+            WHERE id=$2`, [newBalance, accountIdFloat]
         );
 
-        // update balance to account
+        const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : "";
 
+        const transaction = await db.query(`
+            INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, recurringInterval, nextRecurringDate, createdAt, updatedAt)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+            RETURNING *`, [type, id, amountFloat, accountIdFloat, description, date, category, isRecurring, recurringInterval, nextRecurringDate]
+        );
         
         return res.json({ success: true, transaction: transaction.rows[0] });
     }

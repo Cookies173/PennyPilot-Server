@@ -77,7 +77,6 @@ CREATE TABLE budgets(
   id SERIAL PRIMARY KEY,
   amount NUMERIC(15, 2),
   userId INT,
-  lastAlertSent TIMESTAMP,
   createdAt TIMESTAMP,
   updatedAt TIMESTAMP
 );

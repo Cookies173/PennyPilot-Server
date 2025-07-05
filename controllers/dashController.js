@@ -65,10 +65,12 @@ export const allAccount = async (req, res) => {
         const id = user.rows[0].id;
         
         const accounts = await db.query(`
-            SELECT *
-            FROM accounts
-            WHERE userId=$1
-            ORDER BY createdAt DESC`, [id]
+            SELECT a.*, COUNT(t.id) AS transactioncount
+            FROM accounts a
+            LEFT JOIN transactions t ON a.id = t.accountid
+            WHERE a.userId = $1
+            GROUP BY a.id
+            ORDER BY a.createdAt DESC`, [id]
         );
         
         return res.json({ success: true, accounts: accounts.rows });
@@ -151,7 +153,6 @@ export const getBudget = async (req, res) => {
                 AND accountId=$2
                 AND date BETWEEN $3 AND $4`, [id, defaultAccountId, startOfMonth, endOfMonth]
         );
-        // console.log(expenses.rows[0].total || "0");
 
         res.json({ success: true, budget: budget.rows[0], expenses: (expenses.rows[0].total || "0") });
     }
@@ -186,7 +187,7 @@ export const updateBudget = async (req, res) => {
         if(budget.rows.length>0){ // change
             const update = await db.query(`
                 UPDATE budgets
-                SET amount=$1
+                SET amount=$1 updatedAt=NOW()
                 WHERE userId=$2`, [newAmount, id]
             );
         }
@@ -198,6 +199,34 @@ export const updateBudget = async (req, res) => {
         }
 
         res.json({ success: true, budget: budget.rows });
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({ error: "Database error" });
+    }
+};
+
+export const getDashboardData = async (req, res) => {
+    try{
+        const { userId } = req.auth();
+        if(!userId){
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const user = await db.query(`
+            SELECT id 
+            FROM users
+            WHERE clerkUserId=$1`, [userId]
+        );
+        const id = user.rows[0].id;
+
+        const transactions = await db.query(`
+            SELECT *
+            FROM transactions
+            WHERE userId=$1
+            ORDER BY date DESC`, [id]
+        );
+
+        res.json({ success: true, transactions : transactions.rows });
     }
     catch(err){
         console.error(err);

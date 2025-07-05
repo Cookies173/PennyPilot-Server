@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 const upload = multer();
-import { allAccount, createTransaction, getTransaction, scanReceipt, updateTransaction } from "../contollers/tranController.js";
+import { allAccount, createTransaction, getTransaction, scanReceipt, updateTransaction } from "../controllers/tranController.js";
 
 const router = express.Router();
 

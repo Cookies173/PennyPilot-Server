@@ -58,16 +58,37 @@ export const transactionBulkDelete = async(req, res) => {
             WHERE userId=$1 AND id=ANY($2)`, [id, transactionIds]
         );
 
-        // long long code to balance the account
+        const accountBalanceChanges = transactions.rows.reduce((acc, transaction) => {
+            const change = (transaction.type == "expense") ? parseFloat(transaction.amount) : parseFloat(-transaction.amount);
+            acc[transaction.accountid] = (acc[transaction.accountid] || 0) + change;
+            return acc;
+        }, {});
+
+        const keyValue = Object.entries(accountBalanceChanges);
+        const accountId = keyValue[0][0];
+        const netChange = keyValue[0][1];
+
+        const getAccountBalance = await db.query(`
+            SELECT balance
+            FROM accounts
+            WHERE id=$1`, [accountId]
+        );
+
+        const currBalance = parseFloat(getAccountBalance.rows[0].balance);
+        const newBalance = currBalance + netChange;
+
+        const updateAccountBalance = await db.query(`
+            UPDATE accounts
+            SET balance=$1
+            WHERE id=$2`, [newBalance, accountId]
+        );
 
         const deleteTransactions = await db.query(`
             DELETE FROM transactions
             WHERE userId=$1 AND id=ANY($2)`, [id, transactionIds]
         );
 
-        console.log(deleteTransactions.rows);
-
-        return res.json({ success: true, transactions : transactions });
+        return res.json({ success: true, transactions : transactions.rows });
     }
     catch(err){
         console.error(err);

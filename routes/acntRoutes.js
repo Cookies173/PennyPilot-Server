@@ -1,5 +1,5 @@
 import express from "express";
-import { accountDetails, transactionBulkDelete } from "../contollers/acntController.js";
+import { accountDetails, transactionBulkDelete } from "../controllers/acntController.js";
 
 const router = express.Router();
 
