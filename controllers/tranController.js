@@ -108,7 +108,7 @@ export const createTransaction = async (req, res) => {
             WHERE userId=$1 AND id=$2`, [id, accountIdFloat]
         );
     
-        if(!account){
+        if(account.rows.length == 0){
             return res.status(401).json({ error: "Account not found" });
         }
 
@@ -121,12 +121,13 @@ export const createTransaction = async (req, res) => {
             WHERE id=$2`, [newBalance, accountIdFloat]
         );
 
-        const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : "";
+        const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
+        const parsedDate = new Date(date);
 
         const transaction = await db.query(`
             INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, recurringInterval, nextRecurringDate, createdAt, updatedAt)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-            RETURNING *`, [type, id, amountFloat, accountIdFloat, description, date, category, isRecurring, recurringInterval, nextRecurringDate]
+            RETURNING *`, [type, id, amountFloat, accountIdFloat, description, parsedDate, category, isRecurring, recurringInterval, nextRecurringDate]
         );
         
         return res.json({ success: true, transaction: transaction.rows[0] });
@@ -256,7 +257,7 @@ export const updateTransaction = async(req, res) => {
             WHERE id=$1`, [transactionId]
         );
 
-        if(!originalTransaction) return res.status(404).json({ error: "Transaction not Found" });
+        if(originalTransaction.rows.length == 0) return res.status(404).json({ error: "Transaction not Found" });
 
         if(!type || !accountId || !date || !category){
             return res.status(400).json({ error: "Missing required fields." });

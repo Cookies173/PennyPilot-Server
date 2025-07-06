@@ -9,7 +9,7 @@ import acntRoutes from "./routes/acntRoutes.js";
 import tranRoutes from "./routes/tranRoutes.js";
 import { serve } from "inngest/express";
 import { functions } from "./routes/inngestRoutes.js";
-import { inngest } from "./lib/in.js";
+import { inngest } from "./controllers/inngestController.js";
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));

@@ -33,7 +33,6 @@ CREATE TABLE transactions(
   recurringInterval TEXT,
   nextRecurringDate TIMESTAMP,
   lastProcessed TIMESTAMP,
-  status VARCHAR(255),
   createdAt TIMESTAMP,
   updatedAt TIMESTAMP
 );
