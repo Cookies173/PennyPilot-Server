@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const allAccount = async (req, res) => {
@@ -284,15 +283,21 @@ export const updateTransaction = async(req, res) => {
 
         const newBalance = parseFloat(account.rows[0].balance) - oldBalanceChange + newBalanceChange;
 
+        const parsedDate = new Date(date);
+        const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
+
         const transaction = await db.query(`
             UPDATE transactions
-            SET type=$1, amount=$2, description=$3, date=$4, category=$5, isRecurring=$6, recurringInterval=$7, updatedAt=NOW()
-            WHERE id=$8
-            RETURNING *`, [type, amountFloat, description, date, category, isRecurring, recurringInterval, transactionId]
+            SET type=$1, amount=$2, description=$3, date=$4, category=$5, isRecurring=$6, recurringInterval=$7, nextRecurringDate=$8, updatedAt=NOW()
+            WHERE id=$9
+            RETURNING *`, [type, amountFloat, description, parsedDate, category, isRecurring, recurringInterval, nextRecurringDate, transactionId]
         );
 
-        // update balance to account
-
+        const updateAccount = await db.query(`
+            UPDATE accounts
+            SET balance=$1
+            WHERE id=$2`, [newBalance, accountIdFloat]
+        );
         
         return res.json({ success: true, transaction: transaction.rows });
     }
