@@ -32,8 +32,8 @@ app.use("/acnt", acntRoutes);
 app.use("/tran", tranRoutes);
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-app.listen(port, ()=>{
-    console.log("Server running on port 3000.");
-});
+// app.listen(port, ()=>{
+//     console.log("Server running on port 3000.");
+// });
 
 export default app;
