@@ -114,7 +114,7 @@ export const processRecurringTransactions = inngest.createFunction({
       if(!transaction || !isTransactionDue(transaction)) return;
 
       const newDescription = transaction.description + " (Recurring)";
-      const parsedDate = new Date(transaction.date);
+      const parsedDate = new Date(transaction.nextrecurringdate);
 
       const t = await db.query(`
           INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, createdAt, updatedAt)
