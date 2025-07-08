@@ -20,7 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use(cors({
-  origin: "https://penny-pilot-client.vercel.app",
+  origin: "http://localhost:5173",
   credentials: true
 }));
 
@@ -32,8 +32,8 @@ app.use("/acnt", acntRoutes);
 app.use("/tran", tranRoutes);
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-// app.listen(port, ()=>{
-//     console.log("Server running on port 3000.");
-// });
+app.listen(port, ()=>{
+    console.log("Server running on port 3000.");
+});
 
 export default app;
