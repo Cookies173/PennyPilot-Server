@@ -142,7 +142,7 @@ export const getBudget = async (req, res) => {
         );
 
         const currentDate = new Date();
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0);
 
         const expenses = await db.query(`
