@@ -59,7 +59,7 @@ export const transactionBulkDelete = async(req, res) => {
         );
 
         const accountBalanceChanges = transactions.rows.reduce((acc, transaction) => {
-            const change = (transaction.type == "expense") ? parseFloat(transaction.amount) : parseFloat(-transaction.amount);
+            const change = (transaction.type == "expense" || transaction.type == "invested") ? parseFloat(transaction.amount) : parseFloat(-transaction.amount);
             acc[transaction.accountid] = (acc[transaction.accountid] || 0) + change;
             return acc;
         }, {});

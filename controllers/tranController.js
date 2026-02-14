@@ -111,7 +111,7 @@ export const createTransaction = async (req, res) => {
             return res.status(401).json({ error: "Account not found" });
         }
 
-        const balanceChange = (type == "expense") ? -amountFloat : amountFloat;
+        const balanceChange = (type == "expense" || type == "invested") ? -amountFloat : amountFloat;
         const newBalance = parseFloat(account.rows[0].balance) + balanceChange;
 
         const updateAccount = await db.query(`
@@ -276,10 +276,10 @@ export const updateTransaction = async(req, res) => {
             return res.status(401).json({ error: "Account not found" });
         }
         
-        const oldBalanceChange = (originalTransaction.rows[0].type == "expense") 
+        const oldBalanceChange = (originalTransaction.rows[0].type == "expense" || originalTransaction.rows[0].type == "invested") 
             ? parseFloat(-originalTransaction.rows[0].amount)
             : parseFloat(originalTransaction.rows[0].amount);
-        const newBalanceChange = (type == "expense") ? -amountFloat : amountFloat;
+        const newBalanceChange = (type == "expense" || type == "invested") ? -amountFloat : amountFloat;
 
         const newBalance = parseFloat(account.rows[0].balance) - oldBalanceChange + newBalanceChange;
 

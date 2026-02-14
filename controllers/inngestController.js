@@ -122,7 +122,7 @@ export const processRecurringTransactions = inngest.createFunction({
           RETURNING *`, [transaction.type, transaction.userid, transaction.amount, transaction.accountid, newDescription, parsedDate, transaction.category]
       );
 
-      const balanceChange = (transaction.type == "expense") ? parseFloat(-transaction.amount) : parseFloat(transaction.amount);
+      const balanceChange = (transaction.type == "expense" || transaction.type == "invested") ? parseFloat(-transaction.amount) : parseFloat(transaction.amount);
       const newBalance = parseFloat(transaction.account_balance) + balanceChange;
 
       const updateAccount = await db.query(`
