@@ -33,17 +33,18 @@ export const accountDetails = async(req, res) => {
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
     }
 };
 
 export const transactionBulkDelete = async(req, res) => {
+    const client = await db.connect();
     try{
         const { userId } = req.auth();
         if(!userId){
             return res.status(401).json({ error: "Unauthorized" });
         }
-        const user = await db.query(`
+        const user = await client.query(`
             SELECT id 
             FROM users
             WHERE clerkUserId=$1`, [userId]
@@ -52,10 +53,13 @@ export const transactionBulkDelete = async(req, res) => {
 
         const { transactionIds } = req.body;
 
-        const transactions = await db.query(`
+        await client.query("BEGIN");
+
+        const transactions = await client.query(`
             SELECT *
             FROM transactions
-            WHERE userId=$1 AND id=ANY($2)`, [id, transactionIds]
+            WHERE userId=$1 AND id=ANY($2)
+            FOR UPDATE`, [id, transactionIds]
         );
 
         const accountBalanceChanges = transactions.rows.reduce((acc, transaction) => {
@@ -68,30 +72,37 @@ export const transactionBulkDelete = async(req, res) => {
         const accountId = keyValue[0][0];
         const netChange = keyValue[0][1];
 
-        const getAccountBalance = await db.query(`
+        const getAccountBalance = await client.query(`
             SELECT balance
             FROM accounts
-            WHERE id=$1`, [accountId]
+            WHERE id=$1
+            FOR UPDATE`, [accountId]
         );
 
         const currBalance = parseFloat(getAccountBalance.rows[0].balance);
         const newBalance = currBalance + netChange;
 
-        const updateAccountBalance = await db.query(`
+        const updateAccountBalance = await client.query(`
             UPDATE accounts
             SET balance=$1
             WHERE id=$2`, [newBalance, accountId]
         );
 
-        const deleteTransactions = await db.query(`
+        const deleteTransactions = await client.query(`
             DELETE FROM transactions
             WHERE userId=$1 AND id=ANY($2)`, [id, transactionIds]
         );
 
+        await client.query("COMMIT");
+
         return res.json({ success: true, transactions : transactions.rows });
     }
     catch(err){
+        await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
+    }
+    finally{
+        client.release();
     }
 };

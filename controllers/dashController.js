@@ -2,12 +2,13 @@ import express from "express";
 import db from "../lib/db.js";
 
 export const newAccount = async (req, res) => {
+    const client = await db.connect();
     try{
         const { userId } = req.auth();
         if(!userId){
             return res.status(401).json({ error: "Unauthorized" });
         }
-        const user = await db.query(`
+        const user = await client.query(`
             SELECT id 
             FROM users
             WHERE clerkUserId=$1`, [userId]
@@ -24,29 +25,40 @@ export const newAccount = async (req, res) => {
         if(balance=="") balance = "0.00";
         const balanceFloat = parseFloat(balance);
 
-        const freq = await db.query(`
+        const freq = await client.query(`
             SELECT *
             FROM accounts
             WHERE userId=$1`, [id]
         );
         const finalDefault = (freq.rowCount === 0) ? true : isDefault;
+
+        await client.query("BEGIN");
+
         if(finalDefault){
-            const t = await db.query(`
+            const t = await client.query(`
                 UPDATE accounts
                 SET isDefault=false
                 WHERE userId=$1 AND isDefault=true`, [id]
             );
         }
 
-        const accounts = await db.query(`
+        const accounts = await client.query(`
             INSERT INTO accounts(name, type, balance, isDefault, userId, createdAt, updatedAt)
-            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`, [name, type, balanceFloat, finalDefault, id]
+            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+            RETURNING *`, [name, type, balanceFloat, finalDefault, id]
         );
-        res.json({ success: true, account: accounts.rows[0] });
+
+        await client.query("COMMIT");
+
+        return res.json({ success: true, account: accounts.rows[0] });
     }
     catch(err){
+        await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
+    }
+    finally{
+        client.release();
     }
 };
 
@@ -77,24 +89,27 @@ export const allAccount = async (req, res) => {
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
     }
 };
 
 export const updateDefault = async(req, res) => {
+    const client = await db.connect();
     try{
         const { userId } = req.auth();
         if(!userId){
             return res.status(401).json({ error: "Unauthorized" });
         }
-        const user = await db.query(`
+        const user = await client.query(`
             SELECT id 
             FROM users
             WHERE clerkUserId=$1`, [userId]
         );
         const id = user.rows[0].id;
 
-        const t = await db.query(`
+        await client.query("BEGIN");
+
+        const t = await client.query(`
             UPDATE accounts
             SET isDefault=false
             WHERE userId=$1 AND isDefault=true`, [id]
@@ -102,16 +117,24 @@ export const updateDefault = async(req, res) => {
 
         const { accountId } = req.body;
 
-        const updateDefault = await db.query(`
+        const updateDefault = await client.query(`
             UPDATE accounts
             SET isDefault=true
-            WHERE id=$1`, [accountId]
+            WHERE id=$1
+            RETURNING *`, [accountId]
         );
-        res.json({ success: true, updateDefault: updateDefault.rows[0] });
+
+        await client.query("COMMIT");
+
+        return res.json({ success: true, updateDefault: updateDefault.rows[0] });
     }
     catch(err){
+        await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
+    }
+    finally{
+        client.release();
     }
 };
 
@@ -154,11 +177,11 @@ export const getBudget = async (req, res) => {
                 AND date BETWEEN $3 AND $4`, [id, defaultAccountId, startOfMonth, endOfMonth]
         );
 
-        res.json({ success: true, budget: budget.rows[0], expenses: (expenses.rows[0].total || "0") });
+        return res.json({ success: true, budget: budget.rows[0], expenses: (expenses.rows[0].total || "0") });
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
     }
 };
 
@@ -198,11 +221,11 @@ export const updateBudget = async (req, res) => {
             );
         }
 
-        res.json({ success: true, budget: budget.rows });
+        return res.json({ success: true, budget: budget.rows });
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
     }
 };
 
@@ -226,10 +249,10 @@ export const getDashboardData = async (req, res) => {
             ORDER BY date DESC`, [id]
         );
 
-        res.json({ success: true, transactions : transactions.rows });
+        return res.json({ success: true, transactions : transactions.rows });
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: "Database error" });
     }
 };

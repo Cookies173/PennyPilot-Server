@@ -23,10 +23,10 @@ export const syncUser = async (req, res) => {
             SET name=EXCLUDED.name, email=EXCLUDED.email, imageUrl=EXCLUDED.imageUrl, updatedAt=NOW()
             RETURNING *`, [userId, name, email, imageUrl]
         );
-        res.json({ success: true, Id: result.rows[0] });
+        return res.json({ success: true, Id: result.rows[0] });
     }
     catch(err){
         console.error(err);
-        res.status(500).json({ error: "Failed to sync user" });
+        return res.status(500).json({ error: "Failed to sync user" });
     }
 };

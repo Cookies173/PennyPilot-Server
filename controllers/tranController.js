@@ -57,6 +57,10 @@ function calculateNextRecurringDate(startDate, interval){
 };
 
 export const createTransaction = async (req, res) => {
+
+    // Trasaction --> setting up a single connection pool 
+    const client = await db.connect();
+
     try{
         const { userId } = req.auth();
         if(!userId){
@@ -84,7 +88,7 @@ export const createTransaction = async (req, res) => {
             return res.status(403).json({ error: "Request Blocked" });
         }
 
-        const user = await db.query(`
+        const user = await client.query(`
             SELECT id 
             FROM users
             WHERE clerkUserId=$1`, [userId]
@@ -101,20 +105,24 @@ export const createTransaction = async (req, res) => {
         const amountFloat = parseFloat(amount);
         const accountIdFloat = parseFloat(accountId);
 
-        const account = await db.query(`
-            SELECT *
+        await client.query("BEGIN");
+
+        const accountBalance = await client.query(`
+            SELECT balance
             FROM accounts
-            WHERE userId=$1 AND id=$2`, [id, accountIdFloat]
+            WHERE userId=$1 AND id=$2
+            FOR UPDATE`, [id, accountIdFloat]
         );
     
-        if(account.rows.length == 0){
+        if(accountBalance.rows.length == 0){
+            await client.query("ROLLBACK");
             return res.status(401).json({ error: "Account not found" });
         }
 
         const balanceChange = (type == "expense" || type == "invested") ? -amountFloat : amountFloat;
-        const newBalance = parseFloat(account.rows[0].balance) + balanceChange;
+        const newBalance = parseFloat(accountBalance.rows[0].balance) + balanceChange;
 
-        const updateAccount = await db.query(`
+        const updateAccount = await client.query(`
             UPDATE accounts
             SET balance=$1
             WHERE id=$2`, [newBalance, accountIdFloat]
@@ -123,17 +131,23 @@ export const createTransaction = async (req, res) => {
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
         const parsedDate = new Date(date);
 
-        const transaction = await db.query(`
+        const transaction = await client.query(`
             INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, recurringInterval, nextRecurringDate, createdAt, updatedAt)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
             RETURNING *`, [type, id, amountFloat, accountIdFloat, description, parsedDate, category, isRecurring, recurringInterval, nextRecurringDate]
         );
+
+        await client.query("COMMIT");
         
         return res.json({ success: true, transaction: transaction.rows[0] });
     }
     catch(err){
+        await client.query("ROLLBACK");
         console.error(err);
         res.status(500).json({ error: "Database error" });
+    }
+    finally{
+        client.release();
     }
 };
 
@@ -235,13 +249,14 @@ export const getTransaction = async(req, res) => {
 };
 
 export const updateTransaction = async(req, res) => {
+    const client = await db.connect();
     try{
         const { userId } = req.auth();
         if(!userId){
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const user = await db.query(`
+        const user = await client.query(`
             SELECT id 
             FROM users
             WHERE clerkUserId=$1`, [userId]
@@ -250,29 +265,40 @@ export const updateTransaction = async(req, res) => {
 
         let { transactionId, type, amount, accountId, description, date, category, isRecurring, recurringInterval } = req.body;
 
-        const originalTransaction = await db.query(`
+        const originalTransaction = await client.query(`
             SELECT *
             FROM transactions
             WHERE id=$1`, [transactionId]
         );
 
-        if(originalTransaction.rows.length == 0) return res.status(404).json({ error: "Transaction not Found" });
+        if(originalTransaction.rows.length == 0){
+            return res.status(404).json({ error: "Transaction not Found" });
+        }
 
         if(!type || !accountId || !date || !category){
             return res.status(400).json({ error: "Missing required fields." });
         }
 
+        const prevAccountId = parseFloat(originalTransaction.rows[0].accountid);
+        const accountIdFloat = parseFloat(accountId);
+        if(accountIdFloat != prevAccountId){
+            return res.status(409).json({ error: "Account cannot be changed"});
+        }
+
         if(amount=="") amount = "0.00";
         const amountFloat = parseFloat(amount);
-        const accountIdFloat = parseFloat(accountId);
 
-        const account = await db.query(`
+        await client.query("BEGIN");
+
+        const accountBalance = await client.query(`
             SELECT *
             FROM accounts
-            WHERE userId=$1 AND id=$2`, [id, accountIdFloat]
+            WHERE userId=$1 AND id=$2
+            FOR UPDATE`, [id, accountIdFloat]
         );
     
-        if(!account){
+        if(accountBalance.rows.length == 0){
+            await client.query("ROLLBACK");
             return res.status(401).json({ error: "Account not found" });
         }
         
@@ -281,28 +307,33 @@ export const updateTransaction = async(req, res) => {
             : parseFloat(originalTransaction.rows[0].amount);
         const newBalanceChange = (type == "expense" || type == "invested") ? -amountFloat : amountFloat;
 
-        const newBalance = parseFloat(account.rows[0].balance) - oldBalanceChange + newBalanceChange;
+        const newBalance = parseFloat(accountBalance.rows[0].balance) - oldBalanceChange + newBalanceChange;
 
         const parsedDate = new Date(date);
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
 
-        const transaction = await db.query(`
+        const transaction = await client.query(`
             UPDATE transactions
             SET type=$1, amount=$2, description=$3, date=$4, category=$5, isRecurring=$6, recurringInterval=$7, nextRecurringDate=$8, updatedAt=NOW()
             WHERE id=$9
             RETURNING *`, [type, amountFloat, description, parsedDate, category, isRecurring, recurringInterval, nextRecurringDate, transactionId]
         );
 
-        const updateAccount = await db.query(`
+        const updateAccount = await client.query(`
             UPDATE accounts
             SET balance=$1
             WHERE id=$2`, [newBalance, accountIdFloat]
         );
         
+        await client.query("COMMIT");
         return res.json({ success: true, transaction: transaction.rows });
     }
     catch(err){
+        await client.query("ROLLBACK");
         console.error(err);
         res.status(500).json({ error: "Database error" });
+    }
+    finally{
+        client.release();
     }
 };
