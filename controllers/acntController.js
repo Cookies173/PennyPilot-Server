@@ -106,3 +106,33 @@ export const transactionBulkDelete = async(req, res) => {
         client.release();
     }
 };
+
+export const editAccountName = async(req, res) => {
+    try{
+        const { userId } = req.auth();
+        if(!userId){
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const user = await db.query(`
+            SELECT id 
+            FROM users
+            WHERE clerkUserId=$1`, [userId]
+        );
+        const id = user.rows[0].id;
+
+        const { name, accountId } = req.body;
+
+        const editAccount = await db.query(`
+            UPDATE accounts
+            SET name=$1
+            WHERE userId=$2 AND id=$3
+            RETURNING *`, [name, id, accountId]
+        );
+
+        return res.json({ success: true, accounts: editAccount });
+    }
+    catch(err){
+        console.error(err);
+        return res.status(500).json({ error: "Database error" });
+    }
+};
