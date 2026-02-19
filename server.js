@@ -7,6 +7,7 @@ import dashRoutes from "./routes/dashRoutes.js";
 import bodyParser from "body-parser";
 import acntRoutes from "./routes/acntRoutes.js";
 import tranRoutes from "./routes/tranRoutes.js";
+import anylRoutes from "./routes/anylRoutes.js";
 import { serve } from "inngest/express";
 import { functions } from "./routes/inngestRoutes.js";
 import { inngest } from "./controllers/inngestController.js";
@@ -30,6 +31,7 @@ app.use("/auth", authRoutes);
 app.use("/dash", dashRoutes);
 app.use("/acnt", acntRoutes);
 app.use("/tran", tranRoutes);
+app.use("/anyl", anylRoutes);
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
 // app.listen(port, ()=>{
