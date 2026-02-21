@@ -35,7 +35,7 @@ export const getBudget = async (req, res) => {
             SELECT SUM(amount) AS total
             FROM transactions
             WHERE userId=$1 
-                AND type='expense' 
+                AND typeIN ('expense', 'invested')
                 AND accountId=$2
                 AND date BETWEEN $3 AND $4`, [id, defaultAccountId, startOfMonth, endOfMonth]
         );
