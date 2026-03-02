@@ -129,7 +129,9 @@ export const createTransaction = async (req, res) => {
         );
 
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
-        const parsedDate = new Date(date);
+        
+        const selectedDate = new Date(date);
+        const parsedDate = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
 
         if(category == "splitOwed" || category == "interBankTransfer" || category == "splitReturn"){
             
@@ -316,7 +318,9 @@ export const updateTransaction = async(req, res) => {
 
         const newBalance = parseFloat(accountBalance.rows[0].balance) - oldBalanceChange + newBalanceChange;
 
-        const parsedDate = new Date(date);
+        const selectedDate = new Date(date);
+        const parsedDate = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
+        
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
 
         const updateAccount = await client.query(`
