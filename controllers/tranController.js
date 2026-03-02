@@ -131,6 +131,13 @@ export const createTransaction = async (req, res) => {
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
         const parsedDate = new Date(date);
 
+        if(category == "splitOwed" || category == "interBankTransfer" || category == "splitReturn"){
+            
+            await client.query("COMMIT");
+
+            return res.json({ success: true, transaction: updateAccount.rows[0] });
+        }
+
         const transaction = await client.query(`
             INSERT INTO transactions(type, userId, amount, accountId, description, date, category, isRecurring, recurringInterval, nextRecurringDate, createdAt, updatedAt)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
@@ -312,17 +319,28 @@ export const updateTransaction = async(req, res) => {
         const parsedDate = new Date(date);
         const nextRecurringDate = (isRecurring && recurringInterval) ? calculateNextRecurringDate(date, recurringInterval) : null;
 
+        const updateAccount = await client.query(`
+            UPDATE accounts
+            SET balance=$1
+            WHERE id=$2`, [newBalance, accountIdFloat]
+        );
+
+        if(category == "splitOwed" || category == "interBankTransfer" || category == "splitReturn"){
+            
+            const deleteTransaction = await client.query(`
+                DELETE FROM transactions
+                WHERE userId=$1 AND id=$2`, [id, transactionId]
+            );
+
+            await client.query("COMMIT");
+            return res.json({ success: true, transaction: updateAccount.rows[0] });
+        }
+
         const transaction = await client.query(`
             UPDATE transactions
             SET type=$1, amount=$2, description=$3, date=$4, category=$5, isRecurring=$6, recurringInterval=$7, nextRecurringDate=$8, updatedAt=NOW()
             WHERE id=$9
             RETURNING *`, [type, amountFloat, description, parsedDate, category, isRecurring, recurringInterval, nextRecurringDate, transactionId]
-        );
-
-        const updateAccount = await client.query(`
-            UPDATE accounts
-            SET balance=$1
-            WHERE id=$2`, [newBalance, accountIdFloat]
         );
         
         await client.query("COMMIT");
