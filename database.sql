@@ -37,6 +37,17 @@ CREATE TABLE transactions(
   updatedAt TIMESTAMP
 );
 
+CREATE TABLE splits(
+  id SERIAL PRIMARY KEY,
+  type VARCHAR(50),
+  userId INT,
+  amount NUMERIC(15, 2),
+  description VARCHAR(255),
+  date TIMESTAMP,
+  createdAt TIMESTAMP,
+  updatedAt TIMESTAMP
+);
+
 INSERT INTO transactions(
   type,
   userId,

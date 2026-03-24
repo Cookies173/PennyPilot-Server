@@ -137,3 +137,30 @@ export const updateDefault = async(req, res) => {
         client.release();
     }
 };
+
+export const splitMetadata = async (req, res) => {
+    try{
+        const { userId } = req.auth();
+        if(!userId){
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const user = await db.query(`
+            SELECT id 
+            FROM users
+            WHERE clerkUserId=$1`, [userId]
+        );
+        const id = user.rows[0].id;
+        
+        const splits = await db.query(`
+            SELECT SUM(splits.amount) AS balance, COUNT(splits.id) AS transactioncount
+            FROM splits
+            WHERE splits.userId = $1`, [id]
+        );
+        
+        return res.json({ success: true, splits: splits.rows });
+    }
+    catch(err){
+        console.error(err);
+        return res.status(500).json({ error: "Database error" });
+    }
+};
